@@ -1,0 +1,41 @@
+
+
+### Labtainer Dockerfile cho ftp-server
+
+# 
+
+ARG registry
+FROM $registry/labtainer.network2
+
+ARG lab
+ARG labdir
+ARG imagedir
+ARG user_name
+ARG password
+ARG apt_source
+ARG version
+LABEL version=$version
+ENV APT_SOURCE $apt_source
+RUN /usr/bin/apt-source.sh
+
+### Cài đặt vsftpd
+
+RUN apt-get update && apt-get install -y vsftpd
+
+### Tạo user student / 123456
+
+RUN useradd -ms /bin/bash student && echo "student:123456" | chpasswd
+RUN mkdir -p /var/run/vsftpd/empty && chmod 755 /var/run/vsftpd/empty
+
+### Copy file cấu hình vsftpd
+
+COPY vsftpd.conf /etc/vsftpd.conf
+
+### Thêm một file test.txt để client download
+
+RUN echo "This is a test file for FTP Lab" > /home/student/test.txt \
+&& chown student:student /home/student/test.txt
+
+### Bật rsyslog để ghi log, và chạy vsftpd khi container start
+
+CMD service rsyslog start && /usr/sbin/vsftpd /etc/vsftpd.conf -obackground=NO
